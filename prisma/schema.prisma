@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ==================== AUTH MODELS ====================
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  password      String?
+  image         String?
+  role          Role      @default(ANALYST)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+enum Role {
+  ADMIN
+  ANALYST
+}
+
+// ==================== BUSINESS MODELS ====================
+
+model Inconsistencia {
+  id                                        Int       @id @default(autoincrement()) @map("inconsistencia_id")
+  numeroFactura                             String?   @map("numero_factura") @db.VarChar(30)
+  codigoHabilitacionPrestador               String    @map("codigo_habilitacion_prestador") @db.VarChar(50)
+  ips                                       String?   @db.VarChar(100)
+  origen                                    String?   @db.VarChar(50)
+  tipoValidacion                            String?   @map("tipo_validacion") @db.VarChar(100)
+  observacion                               String?   @db.VarChar(1000)
+  tipoServicio                              String?   @map("tipo_servicio") @db.VarChar(100)
+  codigoServicio                            String?   @map("codigo_servicio") @db.VarChar(5000)
+  descripcionServicio                       String?   @map("descripcion_servicio") @db.VarChar(300)
+  cantidad                                  Int?
+  valorUnitario                             Decimal?  @map("valor_unitario") @db.Decimal(18, 2)
+  valorTotal                                Decimal?  @map("valor_total") @db.Decimal(18, 2)
+  fecha                                     DateTime? @default(now()) @db.Date
+  loteCarga                                 String?   @map("lote_carga") @db.VarChar(50)
+  idFacturaFurips1                          String?   @map("id_factura_furips1") @db.VarChar(1000)
+  usuario                                   String?   @db.VarChar(20)
+  aplicaInconsistencia                      Boolean?  @default(false) @map("aplica_inconsistencia")
+  observacionAuditor                        String?   @map("observacion_auditor") @db.VarChar(1000)
+  auditObservations                         String?   @map("audit_observations") @db.Text
+  createdAt                                 DateTime  @default(now()) @map("created_at")
+  updatedAt                                 DateTime  @updatedAt @map("updated_at")
+
+  @@map("inconsistencias")
+}
+
+// Tabla paramétrica para constantes del sistema
+model ParametricTable {
+  id          Int      @id @default(autoincrement())
+  category    String   @db.VarChar(50)
+  code        String   @db.VarChar(50)
+  value       String   @db.VarChar(200)
+  description String?  @db.VarChar(500)
+  isActive    Boolean  @default(true) @map("is_active")
+  sortOrder   Int      @default(0) @map("sort_order")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([category, code])
+  @@map("parametric_tables")
+}
